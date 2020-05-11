@@ -15,6 +15,9 @@
           </v-list-item-icon>
           <v-list-item-title>Load</v-list-item-title>
         </v-list-item>
+        <v-divider></v-divider>
+        <v-spacer></v-spacer>
+        <div id="myInspectorDiv"></div>
       </v-list>
     </v-navigation-drawer>
     <v-container fluid fill-height>
@@ -39,7 +42,10 @@
           <v-textarea v-model="diagramaObtenido" auto-grow></v-textarea>
         </v-col>
         <v-col>
-          <div id="myInspectorDiv"></div>
+          <!--<div
+            id="myInspectorDiv"
+            style="background-color: whitesmoke; border: solid 1px black"
+          ></div>-->
         </v-col>
       </v-row>
     </v-container>
@@ -53,7 +59,6 @@ import { mapGetters } from 'vuex'
 import { Inspector } from 'gojs/extensionsJSM/DataInspector'
 
 export default {
-  // css: ['gojs/extensionsJSM/DataInspector.css'],
   data() {
     return {
       myDiagram: '',
@@ -323,33 +328,6 @@ export default {
       )
     )
 
-    go.Shape.defineFigureGenerator('EllipseInRectangle', function(shape, w, h) {
-      const geo = new go.Geometry()
-      geo.add(
-        new go.PathFigure(0, 0)
-          .add(new go.PathSegment(go.PathSegment.Line, w, 0))
-          .add(new go.PathSegment(go.PathSegment.Line, w, h))
-          .add(new go.PathSegment(go.PathSegment.Line, 0, h))
-          .add(new go.PathSegment(go.PathSegment.Line, 0, 0))
-      )
-      geo.add(
-        new go.PathFigure(0, 0).add(
-          new go.PathSegment(
-            go.PathSegment.Arc,
-            180,
-            360,
-            w / 2,
-            h / 2,
-            w / 2,
-            h / 2
-          )
-        )
-      )
-      geo.spot1 = new go.Spot(0, 0, 25, 25)
-      geo.spot2 = new go.Spot(1, 1, -25, -25)
-      return geo
-    })
-
     go.Shape.defineFigureGenerator('weakDiamond', function(shape, w, h) {
       let param1 = shape ? shape.parameter1 : NaN
       let param2 = shape ? shape.parameter2 : NaN
@@ -445,14 +423,16 @@ export default {
       properties: {
         text: { show: Inspector.showIfPresent },
         // key would be automatically added for nodes, but we want to declare it read-only also:
-        // key: { readOnly: true, show: Inspector.showIfPresent },
+        key: { readOnly: true, show: Inspector.showIfPresent },
         // color would be automatically added for nodes, but we want to declare it a color also:
         color: { show: Inspector.showIfPresent, type: 'color' },
         // Comments and LinkComments are not in any node or link data (yet), so we add them here:
-        Comments: { show: Inspector.showIfNode },
+        // Comments: { show: Inspector.showIfNode },
         // LinkComments: { show: Inspector.showIfLink },
         toText: { show: Inspector.showIfLink },
         fromText: { show: Inspector.showIfLink },
+        type: { readOnly: true },
+
         isGroup: { readOnly: true, show: Inspector.showIfPresent },
         // flag: { show: Inspector.showIfNode, type: 'checkbox' },
         /* state: {
@@ -464,8 +444,12 @@ export default {
           }
         } */
         choices: { show: false }, // must not be shown at all
-        to: { readOnly: true },
-        from: { readOnly: true },
+        to: { show: false, readOnly: true },
+        figure: { show: false },
+        fill: { show: false },
+        loc: { show: false },
+        from: { show: false, readOnly: true },
+        isUnderline: { show: false },
         // an example of specifying the <input> type
         password: { show: Inspector.showIfPresent, type: 'password' }
       }
@@ -502,54 +486,54 @@ export default {
         model: new go.GraphLinksModel([
           // specify the contents of the Palette
           {
-            type: 'entity',
-            text: 'Entidad',
+            type: 'entidad',
+            text: 'entidad',
             figure: 'Rectangle',
             fill: 'white'
           },
           {
-            type: 'weakEntity',
-            text: 'Entidad débil',
+            type: 'entidad_debil',
+            text: 'entidad débil',
             figure: 'FramedRectangle',
             fill: 'white'
           },
           {
-            type: 'atribute',
-            text: 'Atributo',
+            type: 'atributo',
+            text: 'atributo',
             figure: 'Ellipse',
             fill: 'white'
           },
           {
-            type: 'keyAttribute',
-            text: 'Atributo clave',
+            type: 'atributo_clave',
+            text: 'clave',
             figure: 'Ellipse',
             isUnderline: true,
             fill: 'white'
           },
           {
-            type: 'derivedAttribute',
-            text: 'att derivado',
+            type: 'atributo_derivado',
+            text: 'derivado',
             figure: 'Ellipse',
             fill: 'white',
             strokeDashArray: [4, 2]
           },
 
           {
-            type: 'atributeComposite',
-            text: 'Att compuesto',
+            type: 'atributo compuesto',
+            text: 'compuesto',
             figure: 'FramedEllipse',
             fill: 'white',
             strokeDashArray: [4, 2]
           },
           {
-            type: 'weakRelation',
-            text: 'Relación débil',
+            type: 'relacion_debil',
+            text: 'relación débil',
             figure: 'weakDiamond',
             fill: 'white'
           },
           {
-            type: 'relation',
-            text: 'Relación',
+            type: 'relacion',
+            text: 'relación',
             figure: 'Diamond',
             fill: 'white'
           }
@@ -563,11 +547,6 @@ export default {
   middleware: 'authenticated',
   layout: 'workspace', // layout de la aplicación (esto es de nuxt)
   methods: {
-    // tell the GoJS Diagram to update based on the arbitrarily modified model data
-    updateDiagramFromData() {
-      this.$refs.diag.updateDiagramFromData()
-    },
-
     // this event listener is declared on the <diagram>
     modelChanged(e) {
       if (e.isTransactionFinished) {
@@ -584,24 +563,6 @@ export default {
       // set Diagram.initialPosition, not Diagram.position, to handle initialization side-effects
       const pos = this.myDiagram.model.modelData.position
       if (pos) this.myDiagram.initialPosition = go.Point.parse(pos)
-    },
-
-    // Here we modify VUE's view model directly, and
-    // then ask the GoJS Diagram to update everything from the data.
-    // This is less efficient than calling the appropriate GoJS Model methods.
-    // NOTE: Undo will not be able to restore all of the state properly!!
-    modifyStuff() {
-      /* const data = this.diagramData
-      data.nodeDataArray[0].color = 'red'
-      // Note here that because we do not have the GoJS Model,
-      // we cannot find out what values would be unique keys, for reference by the link data.
-      data.nodeDataArray.push({
-        key: ++this.counter2,
-        text: this.counter2.toString(),
-        color: 'orange'
-      })
-      data.linkDataArray.push({ from: 2, to: this.counter2 })
-      this.updateDiagramFromData() */
     },
     saveModel() {
       this.saveDiagramProperties()
